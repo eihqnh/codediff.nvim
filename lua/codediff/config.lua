@@ -53,6 +53,7 @@ M.defaults = {
     file_filter = {
       ignore = {}, -- Glob patterns to hide (e.g., {"*.lock", "dist/*"})
     },
+    focus_on_select = false, -- Jump to modified pane after selecting a file (default: stay in explorer)
   },
 
   -- History panel configuration (for :CodeDiff history)
@@ -83,7 +84,6 @@ M.defaults = {
     },
     explorer = {
       select = "<CR>",
-      focus_file = "l", -- Jump to modified pane if file is open, otherwise open file
       hover = "K",
       refresh = "R",
       toggle_view_mode = "i", -- Toggle between 'list' and 'tree' views

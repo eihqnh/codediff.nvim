@@ -942,13 +942,13 @@ function M.get_commit_files(commit_hash, git_root, callback)
       local parts = vim.split(line, "\t")
       if #parts >= 2 then
         local status = parts[1]:sub(1, 1)
-        local path = parts[2]
+        local path = unquote_path(parts[2])
         local old_path = nil
 
         -- Handle renames (R100 or similar)
         if status == "R" and #parts >= 3 then
-          old_path = parts[2]
-          path = parts[3]
+          old_path = unquote_path(parts[2])
+          path = unquote_path(parts[3])
         end
 
         table.insert(files, {

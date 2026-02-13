@@ -50,6 +50,16 @@ function M.setup(explorer)
         -- File selected
         if node.data then
           explorer.on_file_select(node.data)
+          -- Optionally focus the modified (right) pane after file load
+          if config.options.explorer.focus_on_select then
+            vim.defer_fn(function()
+              local lifecycle = require("codediff.ui.lifecycle")
+              local _, mod_win = lifecycle.get_windows(explorer.tabpage)
+              if mod_win and vim.api.nvim_win_is_valid(mod_win) then
+                vim.api.nvim_set_current_win(mod_win)
+              end
+            end, 200)
+          end
         end
       end
     end, vim.tbl_extend("force", map_options, { buffer = split.bufnr, desc = "Select/toggle entry" }))
@@ -164,50 +174,6 @@ function M.setup(explorer)
 
   -- Note: next_file/prev_file keymaps are set via view/keymaps.lua:setup_all_keymaps()
   -- which uses set_tab_keymap to set them on all buffers including explorer
-
-  -- Helper: focus the modified (right) pane after async file load
-  local function focus_modified_pane()
-    vim.defer_fn(function()
-      local lifecycle = require("codediff.ui.lifecycle")
-      local _, mod_win = lifecycle.get_windows(explorer.tabpage)
-      if mod_win and vim.api.nvim_win_is_valid(mod_win) then
-        vim.api.nvim_set_current_win(mod_win)
-      end
-    end, 200)
-  end
-
-  -- Focus file: jump to modified pane if file is already open, otherwise open it
-  if explorer_keymaps.focus_file then
-    vim.keymap.set("n", explorer_keymaps.focus_file, function()
-      local node = tree:get_node()
-      if not node or not node.data then
-        return
-      end
-
-      -- If cursor is on the already-open file, jump to the modified (right) pane
-      if node.data.path and node.data.path == explorer.current_file_path and (node.data.group or "unstaged") == explorer.current_file_group then
-        local lifecycle = require("codediff.ui.lifecycle")
-        local _, mod_win = lifecycle.get_windows(explorer.tabpage)
-        if mod_win and vim.api.nvim_win_is_valid(mod_win) then
-          vim.api.nvim_set_current_win(mod_win)
-          return
-        end
-      end
-
-      -- Otherwise open the file (same as select for files, toggle for groups)
-      if node.data.type == "group" or node.data.type == "directory" then
-        if node:is_expanded() then
-          node:collapse()
-        else
-          node:expand()
-        end
-        tree:render()
-      elseif node.data.path then
-        explorer.on_file_select(node.data)
-        focus_modified_pane()
-      end
-    end, vim.tbl_extend("force", map_options, { buffer = split.bufnr, desc = "Focus file in diff view" }))
-  end
 end
 
 return M

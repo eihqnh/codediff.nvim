@@ -110,6 +110,7 @@ https://github.com/user-attachments/assets/64c41f01-dffe-4318-bce4-16eec8de356e
       file_filter = {
         ignore = {},  -- Glob patterns to hide (e.g., {"*.lock", "dist/*"})
       },
+      focus_on_select = false,  -- Jump to modified pane after selecting a file (default: stay in explorer)
     },
 
     -- History panel configuration (for :CodeDiff history)
@@ -140,7 +141,6 @@ https://github.com/user-attachments/assets/64c41f01-dffe-4318-bce4-16eec8de356e
       },
       explorer = {
         select = "<CR>",    -- Open diff for selected file
-        focus_file = "l",   -- Jump to modified pane if file is open, otherwise open file
         hover = "K",        -- Show file diff preview
         refresh = "R",      -- Refresh git status
         toggle_view_mode = "i",  -- Toggle between 'list' and 'tree' views
