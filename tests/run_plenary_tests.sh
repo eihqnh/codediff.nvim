@@ -23,28 +23,11 @@ cd "$PROJECT_ROOT"
 # Run all spec files
 FAILED=0
 
-# Test files
-SPEC_FILES=(
-  "tests/lazy_spec.lua"
-  "tests/ffi_integration_spec.lua"
-  "tests/installer_spec.lua"
-  "tests/timeout_spec.lua"
-  "tests/git_integration_spec.lua"
-  "tests/completion_spec.lua"
-  "tests/autoscroll_spec.lua"
-  "tests/explorer_spec.lua"
-  "tests/explorer_staging_spec.lua"
-  "tests/explorer_file_filter_spec.lua"
-  "tests/dir_spec.lua"
-  "tests/render/semantic_tokens_spec.lua"
-  "tests/render/core_spec.lua"
-  "tests/render/lifecycle_spec.lua"
-  "tests/render/view_spec.lua"
-  "tests/render/merge_alignment_spec.lua"
-  "tests/integration_diagnostics_spec.lua"
-  "tests/keymap_restore_spec.lua"
-  "tests/full_integration_spec.lua"
-)
+# Auto-discover all *_spec.lua files (POSIX-compatible)
+SPEC_FILES=()
+while IFS= read -r file; do
+  SPEC_FILES+=("$file")
+done < <(find tests -name '*_spec.lua' -type f | sort)
 
 for spec_file in "${SPEC_FILES[@]}"; do
   echo -e "${CYAN}Running: $spec_file${NC}"

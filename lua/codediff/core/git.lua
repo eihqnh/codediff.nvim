@@ -6,8 +6,8 @@ local M = {}
 local function unquote_path(path)
   if path:sub(1, 1) == '"' and path:sub(-1) == '"' then
     local unquoted = path:sub(2, -2)
-    unquoted = unquoted:gsub('\\(.)', function(char)
-      local escapes = { a = '\a', b = '\b', t = '\t', n = '\n', v = '\v', f = '\f', r = '\r', ['\\'] = '\\', ['"'] = '"' }
+    unquoted = unquoted:gsub("\\(.)", function(char)
+      local escapes = { a = "\a", b = "\b", t = "\t", n = "\n", v = "\v", f = "\f", r = "\r", ["\\"] = "\\", ['"'] = '"' }
       return escapes[char] or char
     end)
     return unquoted
@@ -411,19 +411,19 @@ function M.get_diff_revision(revision, git_root, callback)
       staged = {},
     }
 
-      for line in output:gmatch("[^\r\n]+") do
-        if #line > 0 then
-          local parts = vim.split(line, "\t")
-          if #parts >= 2 then
-            local status = parts[1]:sub(1, 1)
-            local path = unquote_path(parts[2])
-            local old_path = nil
+    for line in output:gmatch("[^\r\n]+") do
+      if #line > 0 then
+        local parts = vim.split(line, "\t")
+        if #parts >= 2 then
+          local status = parts[1]:sub(1, 1)
+          local path = unquote_path(parts[2])
+          local old_path = nil
 
-            -- Handle renames (R100 or similar)
-            if status == "R" and #parts >= 3 then
-              old_path = unquote_path(parts[2])
-              path = unquote_path(parts[3])
-            end
+          -- Handle renames (R100 or similar)
+          if status == "R" and #parts >= 3 then
+            old_path = unquote_path(parts[2])
+            path = unquote_path(parts[3])
+          end
 
           table.insert(result.unstaged, {
             path = path,
@@ -475,23 +475,23 @@ function M.get_diff_revisions(rev1, rev2, git_root, callback)
       staged = {},
     }
 
-      -- For revision comparison, we treat everything as "unstaged" for explorer compatibility
-      -- But to keep explorer compatible, we'll put them in 'staged' as they are committed changes
-      -- relative to each other.
-      
-      for line in output:gmatch("[^\r\n]+") do
-        if #line > 0 then
-          local parts = vim.split(line, "\t")
-          if #parts >= 2 then
-            local status = parts[1]:sub(1, 1)
-            local path = unquote_path(parts[2])
-            local old_path = nil
+    -- For revision comparison, we treat everything as "unstaged" for explorer compatibility
+    -- But to keep explorer compatible, we'll put them in 'staged' as they are committed changes
+    -- relative to each other.
 
-            -- Handle renames (R100 or similar)
-            if status == "R" and #parts >= 3 then
-              old_path = unquote_path(parts[2])
-              path = unquote_path(parts[3])
-            end
+    for line in output:gmatch("[^\r\n]+") do
+      if #line > 0 then
+        local parts = vim.split(line, "\t")
+        if #parts >= 2 then
+          local status = parts[1]:sub(1, 1)
+          local path = unquote_path(parts[2])
+          local old_path = nil
+
+          -- Handle renames (R100 or similar)
+          if status == "R" and #parts >= 3 then
+            old_path = unquote_path(parts[2])
+            path = unquote_path(parts[3])
+          end
 
           table.insert(result.unstaged, {
             path = path,
@@ -526,23 +526,19 @@ function M.apply_patch(git_root, patch, reverse, callback)
       return
     end
 
-    vim.system(
-      vim.list_extend({ "git" }, args),
-      {
-        cwd = git_root,
-        stdin = patch,
-        text = true,
-      },
-      function(result)
-        vim.schedule(function()
-          if result.code == 0 then
-            callback(nil)
-          else
-            callback(result.stderr or "git apply failed")
-          end
-        end)
-      end
-    )
+    vim.system(vim.list_extend({ "git" }, args), {
+      cwd = git_root,
+      stdin = patch,
+      text = true,
+    }, function(result)
+      vim.schedule(function()
+        if result.code == 0 then
+          callback(nil)
+        else
+          callback(result.stderr or "git apply failed")
+        end
+      end)
+    end)
   else
     -- Fallback for older Neovim (< 0.10)
     local stderr_data = {}
@@ -556,9 +552,15 @@ function M.apply_patch(git_root, patch, reverse, callback)
       cwd = git_root,
       stdio = { stdin_pipe, nil, stderr_pipe },
     }, function(code)
-      if stdin_pipe then stdin_pipe:close() end
-      if stderr_pipe then stderr_pipe:close() end
-      if handle then handle:close() end
+      if stdin_pipe then
+        stdin_pipe:close()
+      end
+      if stderr_pipe then
+        stderr_pipe:close()
+      end
+      if handle then
+        handle:close()
+      end
 
       vim.schedule(function()
         if code == 0 then
@@ -604,23 +606,19 @@ function M.discard_hunk_patch(git_root, patch, callback)
       return
     end
 
-    vim.system(
-      vim.list_extend({ "git" }, args),
-      {
-        cwd = git_root,
-        stdin = patch,
-        text = true,
-      },
-      function(result)
-        vim.schedule(function()
-          if result.code == 0 then
-            callback(nil)
-          else
-            callback(result.stderr or "git apply failed")
-          end
-        end)
-      end
-    )
+    vim.system(vim.list_extend({ "git" }, args), {
+      cwd = git_root,
+      stdin = patch,
+      text = true,
+    }, function(result)
+      vim.schedule(function()
+        if result.code == 0 then
+          callback(nil)
+        else
+          callback(result.stderr or "git apply failed")
+        end
+      end)
+    end)
   else
     -- Fallback for older Neovim (< 0.10)
     local stderr_data = {}
@@ -634,9 +632,15 @@ function M.discard_hunk_patch(git_root, patch, callback)
       cwd = git_root,
       stdio = { stdin_pipe, nil, stderr_pipe },
     }, function(code)
-      if stdin_pipe then stdin_pipe:close() end
-      if stderr_pipe then stderr_pipe:close() end
-      if handle then handle:close() end
+      if stdin_pipe then
+        stdin_pipe:close()
+      end
+      if stderr_pipe then
+        stderr_pipe:close()
+      end
+      if handle then
+        handle:close()
+      end
 
       vim.schedule(function()
         if code == 0 then

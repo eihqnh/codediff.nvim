@@ -31,9 +31,11 @@ M.defaults = {
   diff = {
     disable_inlay_hints = true, -- Disable inlay hints in diff windows for cleaner view
     max_computation_time_ms = 5000, -- Maximum time for diff computation (5 seconds, VSCode default)
+    ignore_trim_whitespace = false, -- Ignore leading/trailing whitespace changes (like diffopt+=iwhite)
     hide_merge_artifacts = false, -- Hide merge tool temp files (*.orig, *.BACKUP.*, *.BASE.*, *.LOCAL.*, *.REMOTE.*)
     original_position = "left", -- Position of original (old) content: "left" or "right"
     conflict_ours_position = "right", -- Position of ours (:2) in conflict view: "left" or "right" (independent of original_position)
+    cycle_next_hunk = true, -- Wrap around when navigating hunks (]c/[c): true = cycle, false = stop at first/last
   },
 
   -- Explorer panel configuration
@@ -75,21 +77,16 @@ M.defaults = {
       diff_put = "dp", -- Put change to other buffer (like vimdiff)
       open_in_prev_tab = "gf", -- Open current buffer in previous tab (or new tab before current)
       toggle_stage = "-", -- Stage/unstage current file (works in explorer and diff buffers)
-      stage_hunk = "S",             -- Stage the hunk under cursor to git index
-      unstage_hunk = "U",           -- Unstage the hunk under cursor from git index
-      discard_hunk = "D",           -- Discard the hunk under cursor (working tree only)
+      stage_hunk = "S", -- Stage the hunk under cursor to git index
+      unstage_hunk = "U", -- Unstage the hunk under cursor from git index
+      discard_hunk = "D", -- Discard the hunk under cursor (working tree only)
     },
     explorer = {
       select = "<CR>",
-      open = "o",                     -- Alias for select (open file or toggle group)
-      focus_file = "l",               -- Jump to modified pane if file is open, otherwise open file
+      focus_file = "l", -- Jump to modified pane if file is open, otherwise open file
       hover = "K",
       refresh = "R",
-      toggle_view_mode = "i",  -- Toggle between 'list' and 'tree' views
-      stage_file = "a",              -- Stage file under cursor (git add)
-      stage_file_alt = "s",          -- Alternative binding for stage
-      unstage_file = "u",            -- Unstage file under cursor (git restore --staged)
-      discard_file = "d",            -- Discard changes or delete untracked (with confirmation)
+      toggle_view_mode = "i", -- Toggle between 'list' and 'tree' views
       stage_all = "S", -- Stage all files
       unstage_all = "U", -- Unstage all files
       restore = "X", -- Discard changes to file (restore to index/HEAD)
@@ -104,6 +101,11 @@ M.defaults = {
       accept_current = "<leader>co", -- Accept current (ours/right) change
       accept_both = "<leader>cb", -- Accept both changes (incoming first)
       discard = "<leader>cx", -- Discard both, keep base
+      -- Accept all (whole file) - uppercase versions like diffview
+      accept_all_incoming = "<leader>cT", -- Accept ALL incoming changes
+      accept_all_current = "<leader>cO", -- Accept ALL current changes
+      accept_all_both = "<leader>cB", -- Accept ALL both changes
+      discard_all = "<leader>cX", -- Discard ALL, reset to base
       next_conflict = "]x", -- Jump to next conflict
       prev_conflict = "[x", -- Jump to previous conflict
       -- Vimdiff-style numbered diffget (from result buffer)

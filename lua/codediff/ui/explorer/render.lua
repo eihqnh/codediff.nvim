@@ -192,7 +192,7 @@ function M.create(status_result, git_root, tabpage, width, base_revision, target
         local sess = lifecycle.get_session(tabpage)
         if sess then
           local orig_win, mod_win = lifecycle.get_windows(tabpage)
-          local highlights = require('codediff.ui.highlights')
+          local highlights = require("codediff.ui.highlights")
 
           -- Clear highlights from current session buffers
           local old_orig_buf, old_mod_buf = lifecycle.get_buffers(tabpage)
@@ -208,7 +208,7 @@ function M.create(status_result, git_root, tabpage, width, base_revision, target
           -- Create empty scratch buffer for original window
           local empty_buf = vim.api.nvim_create_buf(false, true)
           vim.bo[empty_buf].modifiable = false
-          vim.bo[empty_buf].buftype = 'nofile'
+          vim.bo[empty_buf].buftype = "nofile"
 
           -- Set up the hidden left pane
           if orig_win and vim.api.nvim_win_is_valid(orig_win) then
@@ -221,20 +221,20 @@ function M.create(status_result, git_root, tabpage, width, base_revision, target
             vim.w[orig_win].codediff_placeholder = true
 
             -- Set up auto-skip: when entering this window, redirect based on where we came from
-            local skip_group = vim.api.nvim_create_augroup('codediff_skip_placeholder_' .. tabpage, { clear = true })
-            vim.api.nvim_create_autocmd('WinEnter', {
+            local skip_group = vim.api.nvim_create_augroup("codediff_skip_placeholder_" .. tabpage, { clear = true })
+            vim.api.nvim_create_autocmd("WinEnter", {
               group = skip_group,
               buffer = empty_buf,
               callback = function()
                 -- Get previous window
-                local prev_win = vim.fn.win_getid(vim.fn.winnr('#'))
+                local prev_win = vim.fn.win_getid(vim.fn.winnr("#"))
 
                 -- If came from file window (right), go left to explorer
                 -- If came from explorer (left), go right to file
                 if prev_win == mod_win then
-                  vim.cmd('wincmd h')
+                  vim.cmd("wincmd h")
                 else
-                  vim.cmd('wincmd l')
+                  vim.cmd("wincmd l")
                 end
               end,
             })
@@ -251,13 +251,12 @@ function M.create(status_result, git_root, tabpage, width, base_revision, target
             lifecycle.update_buffers(tabpage, empty_buf, file_bufnr)
             lifecycle.update_paths(tabpage, "", abs_path)
             lifecycle.update_revisions(tabpage, nil, nil)
-            lifecycle.update_diff_result(tabpage, {})  -- Empty diff for untracked
+            lifecycle.update_diff_result(tabpage, {}) -- Empty diff for untracked
 
             -- Re-apply keymaps (q to quit, etc.) on the new buffer
-            lifecycle.set_tab_keymap(tabpage, 'n',
-              require('codediff.config').options.keymaps.view.quit,
-              function() vim.cmd('tabclose') end,
-              { desc = 'Close diff view' })
+            lifecycle.set_tab_keymap(tabpage, "n", require("codediff.config").options.keymaps.view.quit, function()
+              vim.cmd("tabclose")
+            end, { desc = "Close diff view" })
           end
         end
       end)

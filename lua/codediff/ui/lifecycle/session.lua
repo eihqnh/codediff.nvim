@@ -184,7 +184,9 @@ end
 --- @param modified_win number|nil New modified window ID (optional)
 function M.update_windows(tabpage, original_win, modified_win)
   local sess = active_diffs[tabpage]
-  if not sess then return false end
+  if not sess then
+    return false
+  end
 
   if original_win ~= nil then
     sess.original_win = original_win
@@ -200,7 +202,9 @@ end
 --- @return boolean
 function M.is_single_pane_mode(tabpage)
   local sess = active_diffs[tabpage]
-  if not sess then return false end
+  if not sess then
+    return false
+  end
   return sess.original_win == nil or not vim.api.nvim_win_is_valid(sess.original_win)
 end
 
