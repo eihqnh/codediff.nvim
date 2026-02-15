@@ -95,6 +95,7 @@ M.defaults = {
     history = {
       select = "<CR>", -- Select commit/file or toggle expand
       toggle_view_mode = "i", -- Toggle between 'list' and 'tree' views
+      refresh = "R", -- Refresh history (re-fetch commits)
     },
     -- Conflict mode keymaps (only active in merge conflict views)
     conflict = {

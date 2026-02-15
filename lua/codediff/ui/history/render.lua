@@ -8,6 +8,85 @@ local git = require("codediff.core.git")
 local nodes_module = require("codediff.ui.history.nodes")
 local keymaps_module = require("codediff.ui.history.keymaps")
 
+-- Build tree nodes from commits list (shared between create and refresh)
+function M.build_tree_nodes(commits, git_root, opts)
+  local base_revision = opts and opts.base_revision
+
+  -- Calculate max widths for alignment
+  local max_files = 0
+  local max_insertions = 0
+  local max_deletions = 0
+  for _, commit in ipairs(commits) do
+    if commit.files_changed > max_files then
+      max_files = commit.files_changed
+    end
+    if commit.insertions > max_insertions then
+      max_insertions = commit.insertions
+    end
+    if commit.deletions > max_deletions then
+      max_deletions = commit.deletions
+    end
+  end
+  local max_files_width = #tostring(max_files)
+  local max_ins_width = #tostring(max_insertions)
+  local max_del_width = #tostring(max_deletions)
+
+  local tree_nodes = {}
+
+  -- Build title based on context
+  local title_text
+  if opts and opts.file_path and opts.file_path ~= "" then
+    local filename = opts.file_path:match("([^/]+)$") or opts.file_path
+    title_text = "File History: " .. filename .. " (" .. #commits .. ")"
+  elseif opts and opts.range and opts.range ~= "" then
+    title_text = "Commit History: " .. opts.range .. " (" .. #commits .. ")"
+  else
+    title_text = "Commit History (" .. #commits .. ")"
+  end
+
+  if base_revision then
+    title_text = title_text .. " [base: " .. base_revision .. "]"
+  end
+
+  tree_nodes[#tree_nodes + 1] = Tree.Node({
+    id = "title",
+    text = title_text,
+    data = {
+      type = "title",
+      title = title_text,
+    },
+  })
+
+  for _, commit in ipairs(commits) do
+    tree_nodes[#tree_nodes + 1] = Tree.Node({
+      id = "commit:" .. commit.hash,
+      text = commit.subject,
+      data = {
+        type = "commit",
+        hash = commit.hash,
+        short_hash = commit.short_hash,
+        author = commit.author,
+        date = commit.date,
+        date_relative = commit.date_relative,
+        subject = commit.subject,
+        ref_names = commit.ref_names,
+        files_changed = commit.files_changed,
+        insertions = commit.insertions,
+        deletions = commit.deletions,
+        file_count = commit.files_changed,
+        git_root = git_root,
+        files_loaded = false,
+        file_path = commit.file_path,
+        max_files_width = max_files_width,
+        max_ins_width = max_ins_width,
+        max_del_width = max_del_width,
+      },
+    })
+  end
+
+  return tree_nodes
+end
+
 -- Create file history panel
 -- commits: array of commit objects from git.get_commit_list
 -- git_root: absolute path to git repository root
@@ -61,88 +140,12 @@ function M.create(commits, git_root, tabpage, width, opts)
   -- Check if single file mode
   local is_single_file_mode = opts.file_path and opts.file_path ~= ""
 
-  -- Calculate max widths for alignment
-  local max_files = 0
-  local max_insertions = 0
-  local max_deletions = 0
-  for _, commit in ipairs(commits) do
-    if commit.files_changed > max_files then
-      max_files = commit.files_changed
-    end
-    if commit.insertions > max_insertions then
-      max_insertions = commit.insertions
-    end
-    if commit.deletions > max_deletions then
-      max_deletions = commit.deletions
-    end
-  end
-  local max_files_width = #tostring(max_files)
-  local max_ins_width = #tostring(max_insertions)
-  local max_del_width = #tostring(max_deletions)
-
   -- Build initial tree with commit nodes (files will be loaded on expand)
-  local tree_nodes = {}
+  local tree_nodes = M.build_tree_nodes(commits, git_root, opts)
   local first_commit_node = nil -- Track first commit for auto-expand
-
-  -- Build title based on context
-  local title_text
-  if opts.file_path and opts.file_path ~= "" then
-    local filename = opts.file_path:match("([^/]+)$") or opts.file_path
-    title_text = "File History: " .. filename .. " (" .. #commits .. ")"
-  elseif opts.range and opts.range ~= "" then
-    title_text = "Commit History: " .. opts.range .. " (" .. #commits .. ")"
-  else
-    title_text = "Commit History (" .. #commits .. ")"
-  end
-
-  if base_revision then
-    title_text = title_text .. " [base: " .. base_revision .. "]"
-  end
-
-  -- Add title node
-  tree_nodes[#tree_nodes + 1] = Tree.Node({
-    id = "title",
-    text = title_text,
-    data = {
-      type = "title",
-      title = title_text,
-    },
-  })
-
-  for _, commit in ipairs(commits) do
-    -- Create placeholder commit node - files loaded on expand
-    -- Use commit hash as unique ID to avoid duplicate ID errors when subjects match
-    local commit_node = Tree.Node({
-      id = "commit:" .. commit.hash,
-      text = commit.subject,
-      data = {
-        type = "commit",
-        hash = commit.hash,
-        short_hash = commit.short_hash,
-        author = commit.author,
-        date = commit.date,
-        date_relative = commit.date_relative,
-        subject = commit.subject,
-        ref_names = commit.ref_names,
-        files_changed = commit.files_changed,
-        insertions = commit.insertions,
-        deletions = commit.deletions,
-        file_count = commit.files_changed, -- Use files_changed as initial count
-        git_root = git_root,
-        files_loaded = false,
-        -- File path at this commit (for single file mode with renames)
-        -- Also used to detect single file mode in nodes.lua
-        file_path = commit.file_path,
-        -- Alignment info
-        max_files_width = max_files_width,
-        max_ins_width = max_ins_width,
-        max_del_width = max_del_width,
-      },
-    })
-    tree_nodes[#tree_nodes + 1] = commit_node
-    -- Track first commit for auto-expand
-    if not first_commit_node then
-      first_commit_node = commit_node
+  for _, node in ipairs(tree_nodes) do
+    if node.data and node.data.type == "commit" and not first_commit_node then
+      first_commit_node = node
     end
   end
 
@@ -303,6 +306,9 @@ function M.create(commits, git_root, tabpage, width, opts)
     on_file_select(file_data)
   end
 
+  -- Store load_commit_files for refresh to re-expand commits
+  history._load_commit_files = load_commit_files
+
   -- Setup keymaps
   keymaps_module.setup(history, {
     is_single_file_mode = is_single_file_mode,
@@ -361,6 +367,10 @@ function M.create(commits, git_root, tabpage, width, opts)
       end
     end, 100)
   end
+
+  -- Setup auto-refresh (git watcher + BufEnter)
+  local refresh_module = require("codediff.ui.history.refresh")
+  refresh_module.setup_auto_refresh(history, tabpage)
 
   -- Re-render on window resize
   vim.api.nvim_create_autocmd("WinResized", {
