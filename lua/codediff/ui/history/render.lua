@@ -213,6 +213,13 @@ function M.create(commits, git_root, tabpage, width, opts)
       end
 
       vim.schedule(function()
+        -- Apply file_filter.ignore patterns (same as explorer view)
+        local filter = require("codediff.ui.explorer.filter")
+        local explorer_config = config.options.explorer or {}
+        local file_filter = explorer_config.file_filter or {}
+        local ignore_patterns = file_filter.ignore or {}
+        files = filter.apply(files, ignore_patterns)
+
         -- Create file nodes based on view_mode
         local history_config = config.options.history or {}
         local view_mode = history_config.view_mode or "list"
