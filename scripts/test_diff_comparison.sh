@@ -405,6 +405,24 @@ for FILE_IDX in "${!TOP_FILES[@]}"; do
     fi
 done
 
+# Test crafted move detection pairs
+PAIRS_DIR="$TOOL_REPO_ROOT/scripts/test_pairs"
+if [ -d "$PAIRS_DIR" ]; then
+    if [ $VERBOSITY -ge 1 ]; then
+        echo ""
+        echo "Testing crafted move detection pairs..."
+    fi
+    for PAIR_DIR in "$PAIRS_DIR"/*/; do
+        if [ -f "$PAIR_DIR/original.txt" ] && [ -f "$PAIR_DIR/modified.txt" ]; then
+            PAIR_NAME=$(basename "$PAIR_DIR")
+            test_pair "$PAIR_DIR/original.txt" "$PAIR_DIR/modified.txt" "pair_${PAIR_NAME}" "crafted"
+            if [ $VERBOSITY -ge 1 ]; then
+                echo "  Tested: $PAIR_NAME"
+            fi
+        fi
+    done
+fi
+
 # Output based on verbosity level
 if [ $VERBOSITY -eq 0 ]; then
     # Quiet mode: single line for easy comparison
