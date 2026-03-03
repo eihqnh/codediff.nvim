@@ -23,7 +23,14 @@ function M.setup_all_keymaps(tabpage, original_bufnr, modified_bufnr, is_explore
     if not lifecycle.confirm_close_with_unsaved(tabpage) then
       return -- User cancelled
     end
-    vim.cmd("tabclose")
+    if #vim.api.nvim_list_tabpages() == 1 then
+      -- Last tab: clean up diff session first so session-persistence plugins
+      -- don't save scratch/virtual buffers, then quit neovim entirely.
+      lifecycle.cleanup_for_quit(tabpage)
+      vim.cmd("qall")
+    else
+      vim.cmd("tabclose")
+    end
   end
 
   -- Helper: Toggle explorer visibility (explorer mode only)

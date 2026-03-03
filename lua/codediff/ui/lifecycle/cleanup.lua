@@ -215,6 +215,51 @@ function M.cleanup(tabpage)
   cleanup_diff(tabpage)
 end
 
+-- Aggressive cleanup for quitting neovim from the last diff tab.
+-- Deletes ALL codediff-owned buffers (explorer, scratch placeholders, virtual,
+-- result) so session-persistence plugins don't save them.
+function M.cleanup_for_quit(tabpage)
+  tabpage = tabpage or vim.api.nvim_get_current_tabpage()
+  local active_diffs = session.get_active_diffs()
+  local diff = active_diffs[tabpage]
+
+  -- Collect all codediff-owned buffer numbers before cleanup_diff removes tracking
+  local bufs_to_delete = {}
+  if diff then
+    -- Explorer / history panel buffer
+    if diff.explorer and diff.explorer.bufnr then
+      bufs_to_delete[diff.explorer.bufnr] = true
+    end
+    -- Diff pane buffers (virtual AND scratch placeholders)
+    if diff.original_bufnr then
+      bufs_to_delete[diff.original_bufnr] = true
+    end
+    if diff.modified_bufnr then
+      bufs_to_delete[diff.modified_bufnr] = true
+    end
+    -- Conflict result buffer
+    if diff.result_bufnr then
+      bufs_to_delete[diff.result_bufnr] = true
+    end
+  end
+
+  -- Run normal cleanup first (LSP notifications, autocmds, state restore, etc.)
+  cleanup_diff(tabpage)
+
+  -- Now force-delete all collected buffers that aren't real files worth keeping
+  for bufnr, _ in pairs(bufs_to_delete) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      local bt = vim.bo[bufnr].buftype
+      local name = vim.api.nvim_buf_get_name(bufnr)
+      -- Keep real, named, on-disk file buffers; delete everything else
+      local is_real_file = bt == "" and name ~= "" and vim.fn.filereadable(name) == 1
+      if not is_real_file then
+        pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+      end
+    end
+  end
+end
+
 -- Cleanup all active diffs (useful for plugin unload/reload)
 function M.cleanup_all()
   local active_diffs = session.get_active_diffs()
