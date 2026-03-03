@@ -1,6 +1,6 @@
 -- Keymaps for history panel
 local config = require("codediff.config")
-local tree_utils = require("codediff.ui.lib.tree-utils")
+local tree_utils = require("codediff.ui.lib.tree_utils")
 
 local M = {}
 
@@ -125,7 +125,6 @@ function M.setup(history, opts)
   -- Fold keymaps (Vim-style: zo/zO/zc/zC/za/zA/zR/zM — directory nodes only)
   tree_utils.setup_fold_keymaps({
     tree = tree,
-    winid = split.winid,
     keymaps = history_keymaps,
     bufnr = split.bufnr,
   })

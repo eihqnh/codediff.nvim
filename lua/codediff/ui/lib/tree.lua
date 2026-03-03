@@ -42,10 +42,9 @@ end
 -- Node methods
 
 local function set_expanded_recursively(node, expanded)
-  if not node:is_foldable() then
-    return
+  if node:is_foldable() then
+    node._expanded = expanded
   end
-  node._expanded = expanded
   for _, child in ipairs(node._children) do
     set_expanded_recursively(child, expanded)
   end

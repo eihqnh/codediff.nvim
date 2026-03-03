@@ -2,7 +2,7 @@
 local config = require("codediff.config")
 local actions_module = require("codediff.ui.explorer.actions")
 local refresh_module = require("codediff.ui.explorer.refresh")
-local tree_utils = require("codediff.ui.lib.tree-utils")
+local tree_utils = require("codediff.ui.lib.tree_utils")
 
 local M = {}
 
@@ -175,7 +175,6 @@ function M.setup(explorer)
   -- Fold keymaps (Vim-style: zo/zO/zc/zC/za/zA/zR/zM)
   tree_utils.setup_fold_keymaps({
     tree = tree,
-    winid = split.winid,
     keymaps = explorer_keymaps,
     bufnr = split.bufnr,
   })
