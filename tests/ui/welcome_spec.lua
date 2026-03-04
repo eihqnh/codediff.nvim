@@ -36,6 +36,7 @@ describe("Welcome Page", function()
       assert.equals("nofile", vim.bo[bufnr].buftype)
       assert.equals("wipe", vim.bo[bufnr].bufhidden)
       assert.is_false(vim.bo[bufnr].buflisted)
+      assert.equals("codediff", vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t"))
 
       -- Buffer should contain the logo
       local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)

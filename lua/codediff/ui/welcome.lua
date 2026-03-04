@@ -48,6 +48,9 @@ function M.create_buffer(width, height)
   vim.bo[bufnr].buftype = "nofile"
   vim.bo[bufnr].bufhidden = "wipe"
   vim.bo[bufnr].buflisted = false
+  if not pcall(vim.api.nvim_buf_set_name, bufnr, "codediff") then
+    pcall(vim.api.nvim_buf_set_name, bufnr, "codediff (" .. bufnr .. ")")
+  end
 
   -- Build content lines: logo + blank + hint + keys
   local content_lines = {}
