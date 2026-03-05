@@ -385,4 +385,129 @@ describe("Tree", function()
     local details = mark[4]
     assert.equals("Comment", details.hl_group)
   end)
+
+  -- is_foldable -----------------------------------------------------
+
+  it("is_foldable() returns true for group nodes", function()
+    local node = Tree.Node({ text = "grp", data = { type = "group" } })
+    assert.is_true(node:is_foldable())
+  end)
+
+  it("is_foldable() returns true for directory nodes", function()
+    local node = Tree.Node({ text = "dir", data = { type = "directory" } })
+    assert.is_true(node:is_foldable())
+  end)
+
+  it("is_foldable() returns false for commit nodes even with children", function()
+    local child = Tree.Node({ text = "f", data = { type = "file" } })
+    local node = Tree.Node({ text = "commit", data = { type = "commit" } }, { child })
+    assert.is_true(node:has_children())
+    assert.is_false(node:is_foldable())
+  end)
+
+  it("is_foldable() returns false for title nodes", function()
+    local node = Tree.Node({ text = "title", data = { type = "title" } })
+    assert.is_false(node:is_foldable())
+  end)
+
+  it("is_foldable() returns false for file nodes", function()
+    local node = Tree.Node({ text = "file", data = { type = "file" } })
+    assert.is_false(node:is_foldable())
+  end)
+
+  it("is_foldable() returns false for nodes without data.type", function()
+    local node = Tree.Node({ text = "plain" })
+    assert.is_false(node:is_foldable())
+  end)
+
+  -- expand_recursively / collapse_recursively -----------------------
+
+  it("expand_recursively() expands foldable descendants only", function()
+    local file = Tree.Node({ text = "f", id = "ef", data = { type = "file" } })
+    local dir = Tree.Node({ text = "d", id = "ed", data = { type = "directory" } }, { file })
+    local group = Tree.Node({ text = "g", id = "eg", data = { type = "group" } }, { dir })
+    Tree({ bufnr = bufnr, nodes = { group } })
+
+    group:expand_recursively()
+
+    assert.is_true(group:is_expanded())
+    assert.is_true(dir:is_expanded())
+    assert.is_false(file:is_expanded())
+  end)
+
+  it("expand_recursively() on non-foldable node still propagates to foldable children", function()
+    local file = Tree.Node({ text = "f", id = "hf", data = { type = "file" } })
+    local dir = Tree.Node({ text = "d", id = "hd", data = { type = "directory" } }, { file })
+    local commit = Tree.Node({ text = "c", id = "hc", data = { type = "commit" } }, { dir })
+    Tree({ bufnr = bufnr, nodes = { commit } })
+
+    commit:expand_recursively()
+
+    assert.is_false(commit:is_expanded())
+    assert.is_true(dir:is_expanded())
+    assert.is_false(file:is_expanded())
+  end)
+
+  it("collapse_recursively() collapses all foldable descendants", function()
+    local dir = Tree.Node({ text = "d", id = "cd", data = { type = "directory" } })
+    local group = Tree.Node({ text = "g", id = "cg", data = { type = "group" } }, { dir })
+    Tree({ bufnr = bufnr, nodes = { group } })
+
+    group:expand()
+    dir:expand()
+    assert.is_true(group:is_expanded())
+    assert.is_true(dir:is_expanded())
+
+    group:collapse_recursively()
+
+    assert.is_false(group:is_expanded())
+    assert.is_false(dir:is_expanded())
+  end)
+
+  it("collapse_recursively() on non-foldable node propagates to foldable children", function()
+    local dir = Tree.Node({ text = "d", id = "pd", data = { type = "directory" } })
+    local commit = Tree.Node({ text = "c", id = "pc", data = { type = "commit" } }, { dir })
+    Tree({ bufnr = bufnr, nodes = { commit } })
+
+    commit:expand()
+    dir:expand()
+
+    commit:collapse_recursively()
+
+    -- commit is not foldable so its _expanded stays as-is (set_expanded_recursively skips it)
+    assert.is_true(commit:is_expanded())
+    assert.is_false(dir:is_expanded())
+  end)
+
+  -- Interaction with render -----------------------------------------
+
+  it("expand_recursively() + render() shows foldable children in buffer", function()
+    local file = Tree.Node({ text = "file.lua", id = "rf", data = { type = "file" } })
+    local dir = Tree.Node({ text = "src/", id = "rd", data = { type = "directory" } }, { file })
+    local group = Tree.Node({ text = "Changes", id = "rg", data = { type = "group" } }, { dir })
+    local tree = Tree({ bufnr = bufnr, nodes = { group } })
+
+    group:expand_recursively()
+    tree:render()
+
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    assert.same({ "Changes", "src/", "file.lua" }, lines)
+  end)
+
+  it("collapse_recursively() + render() shows only root node", function()
+    local file = Tree.Node({ text = "file.lua", id = "cf2", data = { type = "file" } })
+    local dir = Tree.Node({ text = "src/", id = "cd2", data = { type = "directory" } }, { file })
+    local group = Tree.Node({ text = "Changes", id = "cg2", data = { type = "group" } }, { dir })
+    local tree = Tree({ bufnr = bufnr, nodes = { group } })
+
+    group:expand_recursively()
+    tree:render()
+    assert.equals(3, #vim.api.nvim_buf_get_lines(bufnr, 0, -1, false))
+
+    group:collapse_recursively()
+    tree:render()
+
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    assert.same({ "Changes" }, lines)
+  end)
 end)
