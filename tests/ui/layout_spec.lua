@@ -944,7 +944,7 @@ describe("Layout Manager", function()
 
     -- Validate: empty diff result (no highlights)
     assert.is_truthy(session.stored_diff_result, "Should have diff result")
-    assert.is_nil(session.stored_diff_result.changes, "Should have no changes (empty diff)")
+    assert.same(session.stored_diff_result.changes, {}, "Should have no changes (empty diff)")
 
     vim.fn.delete(tmp_file)
     cleanup_mock_session(tabpage)
@@ -1082,7 +1082,7 @@ describe("Layout Manager", function()
 
     -- Validate: empty diff result
     assert.is_truthy(session.stored_diff_result, "Should have diff result")
-    assert.is_nil(session.stored_diff_result.changes, "Should have no changes")
+    assert.same(session.stored_diff_result.changes, {}, "Should have no changes")
 
     cleanup_mock_session(tabpage)
   end)

@@ -766,7 +766,7 @@ local function show_single_file(tabpage, opts)
     lifecycle.update_buffers(tabpage, orig_bufnr, mod_bufnr)
     lifecycle.update_paths(tabpage, opts.original_path or "", opts.modified_path or "")
     lifecycle.update_revisions(tabpage, opts.original_revision, opts.modified_revision)
-    lifecycle.update_diff_result(tabpage, {})
+    lifecycle.update_diff_result(tabpage, { changes = {}, moves = {} })
 
     local view_keymaps = require("codediff.ui.view.keymaps")
     view_keymaps.setup_all_keymaps(tabpage, orig_bufnr, mod_bufnr, session.mode == "explorer")
