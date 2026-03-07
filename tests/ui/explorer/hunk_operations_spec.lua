@@ -338,13 +338,10 @@ describe("Hunk operations (side-by-side)", function()
     local tabpage, session, explorer = open_codediff_and_wait(repo)
     local lifecycle = require("codediff.ui.lifecycle")
 
-    -- Select the file in the staged group
-    explorer.on_file_select({
-      path = "file1.txt",
-      status = "M",
-      git_root = repo.dir,
-      group = "staged",
-    })
+    -- The explorer auto-selects file1.txt in the "staged" group because
+    -- all changes are staged and there are no unstaged files.  We just
+    -- wait for that async selection to finish rather than issuing a
+    -- duplicate on_file_select call that would race with the auto-select.
 
     -- Wait for staged view (modified_revision == ":0") and 2 hunks
     local staged_ready = vim.wait(8000, function()
