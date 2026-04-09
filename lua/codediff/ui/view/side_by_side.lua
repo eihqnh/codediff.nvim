@@ -394,8 +394,23 @@ end
 ---@param auto_scroll_to_first_hunk boolean?
 ---@return boolean
 function M.update(tabpage, session_config, auto_scroll_to_first_hunk)
-  -- Save current window to restore focus after update
+  -- Preserve caller window/view while buffers and windows are reconfigured.
+  -- This prevents cursor jumps and scroll position loss during layout updates.
   local saved_current_win = vim.api.nvim_get_current_win()
+  local saved_current_cursor = nil
+  local saved_current_view = nil
+  if saved_current_win and vim.api.nvim_win_is_valid(saved_current_win) then
+    local ok_cursor, cursor = pcall(vim.api.nvim_win_get_cursor, saved_current_win)
+    if ok_cursor then
+      saved_current_cursor = cursor
+    end
+    local ok_view, view = pcall(vim.api.nvim_win_call, saved_current_win, function()
+      return vim.fn.winsaveview()
+    end)
+    if ok_view then
+      saved_current_view = view
+    end
+  end
 
   -- Get existing session
   local session = lifecycle.get_session(tabpage)
@@ -489,6 +504,21 @@ function M.update(tabpage, session_config, auto_scroll_to_first_hunk)
     local should_auto_scroll = auto_scroll_to_first_hunk == true
     local lines_diff
 
+    local function restore_saved_focus_and_view()
+      -- Restore caller window focus, cursor position, and scroll position
+      if saved_current_win and vim.api.nvim_win_is_valid(saved_current_win) then
+        vim.api.nvim_set_current_win(saved_current_win)
+        if saved_current_view then
+          pcall(vim.api.nvim_win_call, saved_current_win, function()
+            vim.fn.winrestview(saved_current_view)
+          end)
+        end
+        if saved_current_cursor then
+          pcall(vim.api.nvim_win_set_cursor, saved_current_win, saved_current_cursor)
+        end
+      end
+    end
+
     if session_config.conflict then
       -- Conflict mode: Fetch base content and render both sides against base
       local git = require("codediff.core.git")
@@ -518,6 +548,7 @@ function M.update(tabpage, session_config, auto_scroll_to_first_hunk)
               local conflict = require("codediff.ui.conflict")
               conflict.setup_keymaps(tabpage)
             end
+            restore_saved_focus_and_view()
           end
         end)
       end)
@@ -547,10 +578,7 @@ function M.update(tabpage, session_config, auto_scroll_to_first_hunk)
         local is_explorer_mode = session.mode == "explorer"
         setup_all_keymaps(tabpage, original_info.bufnr, modified_info.bufnr, is_explorer_mode)
 
-        -- Restore focus to the window that was active before update
-        if saved_current_win and vim.api.nvim_win_is_valid(saved_current_win) then
-          vim.api.nvim_set_current_win(saved_current_win)
-        end
+        restore_saved_focus_and_view()
       end
     end
   end

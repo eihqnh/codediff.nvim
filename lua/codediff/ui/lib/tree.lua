@@ -229,6 +229,22 @@ function Tree:render()
     return
   end
 
+  -- Save window view before buffer modification to restore cursor position after render
+  local explorer_winid = nil
+  local saved_view = nil
+  for _, winid in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(winid) == self._bufnr then
+      explorer_winid = winid
+      local ok, view = pcall(vim.api.nvim_win_call, winid, function()
+        return vim.fn.winsaveview()
+      end)
+      if ok then
+        saved_view = view
+      end
+      break
+    end
+  end
+
   -- Collect visible nodes via depth-first traversal
   local visible_nodes = {}
   local function collect(nodes)
@@ -283,7 +299,39 @@ function Tree:render()
   local was_readonly = vim.bo[self._bufnr].readonly
   vim.bo[self._bufnr].readonly = false
   vim.bo[self._bufnr].modifiable = true
-  vim.api.nvim_buf_set_lines(self._bufnr, 0, -1, false, lines)
+
+  -- Apply minimal buffer patch instead of full replace to reduce cursor reset
+  -- side effects in explorer window rendering.
+  --
+  -- Strategy: Find unchanged prefix and suffix to minimize modifications.
+  -- Only update the middle section that actually changed.
+  local old_lines = vim.api.nvim_buf_get_lines(self._bufnr, 0, -1, false)
+  local old_len = #old_lines
+  local new_len = #lines
+
+  -- Find common prefix: consecutive lines that are identical from start
+  local prefix = 0
+  while prefix < old_len and prefix < new_len and old_lines[prefix + 1] == lines[prefix + 1] do
+    prefix = prefix + 1
+  end
+
+  -- Find common suffix: consecutive lines that are identical from end
+  local suffix = 0
+  while suffix < (old_len - prefix) and suffix < (new_len - prefix)
+      and old_lines[old_len - suffix] == lines[new_len - suffix] do
+    suffix = suffix + 1
+  end
+
+  -- Apply changes only to the middle section (between prefix and suffix)
+  if prefix < old_len or prefix < new_len then
+    local start_idx = prefix
+    local old_end_idx = old_len - suffix
+    local replacement = {}
+    for i = prefix + 1, new_len - suffix do
+      replacement[#replacement + 1] = lines[i]
+    end
+    vim.api.nvim_buf_set_lines(self._bufnr, start_idx, old_end_idx, false, replacement)
+  end
 
   -- Apply highlights
   vim.api.nvim_buf_clear_namespace(self._bufnr, self._ns_id, 0, -1)
@@ -294,6 +342,12 @@ function Tree:render()
         hl_group = entry[3],
       })
     end
+  end
+
+  if explorer_winid and saved_view and vim.api.nvim_win_is_valid(explorer_winid) then
+    pcall(vim.api.nvim_win_call, explorer_winid, function()
+      vim.fn.winrestview(saved_view)
+    end)
   end
 
   vim.bo[self._bufnr].modifiable = false

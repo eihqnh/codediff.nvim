@@ -115,19 +115,6 @@ function M.create(status_result, git_root, tabpage, width, base_revision, target
   })
 
   -- Expand all groups by default before first render
-  -- In tree mode, also expand all directories
-  local function expand_nodes_recursive(nodes)
-    for _, node in ipairs(nodes) do
-      if node.data and (node.data.type == "group" or node.data.type == "directory") then
-        node:expand()
-        if node:has_children() then
-          expand_nodes_recursive(node:get_child_ids())
-        end
-      end
-    end
-  end
-
-  -- get_child_ids returns IDs, need to get actual nodes
   for _, node in ipairs(tree_data) do
     if node.data and node.data.type == "group" then
       node:expand()
