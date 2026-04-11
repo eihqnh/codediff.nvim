@@ -251,11 +251,12 @@ function M.initialize_tracking(result_bufnr, conflict_blocks)
   end
 
   -- Clear existing extmarks in our namespace
+  local line_count = vim.api.nvim_buf_line_count(result_bufnr)
   vim.api.nvim_buf_clear_namespace(result_bufnr, tracking_ns, 0, -1)
 
   for _, block in ipairs(conflict_blocks) do
-    local start_line = block.base_range.start_line - 1
-    local end_line = block.base_range.end_line - 1
+    local start_line = math.min(block.base_range.start_line - 1, line_count)
+    local end_line = math.min(block.base_range.end_line - 1, line_count)
 
     -- Create extmark with gravity: right (adjusts as text is inserted before it)
     -- We want to track the *range* of this block.
